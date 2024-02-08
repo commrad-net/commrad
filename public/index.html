@@ -1,0 +1,15 @@
+<html>
+    <body>
+        <h1>Commrad</h1>
+        <div cr-data="{books: $get('books')}">
+            <template cr-for="book in books">
+                <h2 cr-text="book.title"></h2>
+            </template>
+        </div>
+        <div cr-data="{title: ''}">
+            <input cr-model="title" type="text">
+            <button cr-on:click="$create('books', {title: title})">Add</button>
+        </div>
+        <script src="commrad/lib.js"></script>
+    </body>
+</html>

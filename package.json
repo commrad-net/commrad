@@ -1,0 +1,17 @@
+{
+  "name": "commrad",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx vite build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "alpinejs": "^3.13.5",
+    "pocketbase": "^0.21.1",
+    "vite": "^5.0.12"
+  }
+}
