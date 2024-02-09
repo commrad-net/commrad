@@ -1,15 +1,20 @@
 <html>
     <body>
         <h1>Commrad</h1>
-        <div cr-data="{books: $get('books')}">
+        <div cr-collection="books" cr-sort="created">
             <template cr-for="book in books">
-                <h2 cr-text="book.title"></h2>
+                <div>
+                    <h2 cr-text="book.title"></h2>
+                    <button cr-action="delete" cr-collection="books" cr-record="book.id">Delete</button>
+                </div>
             </template>
         </div>
-        <div cr-data="{title: ''}">
-            <input cr-model="title" type="text">
-            <button cr-on:click="$create('books', {title: title})">Add</button>
-        </div>
+        <form cr-collection="books" cr-action="create">
+            <input type="text" name="title">
+            <button type="submit">Add</button>
+        </form>
+        <button cr-action="create" cr-collection="books" cr-data="{title: 'New Book'}">Add New</button>
+        <cr-admin></cr-admin>
         <script src="commrad/lib.js"></script>
     </body>
 </html>

@@ -9,28 +9,14 @@ const db = new PocketBase();
 
 const init = () => {
 
+    db.autoCancellation(false);
+
     // Set the prefix for AlpineJS
     Alpine.prefix(`${prefix}-`);
 
     Alpine.magic('db', (el, { Alpine }) => {
         return db;
     });
-
-    Alpine.magic('getOne', (el, { Alpine }) => (collectionIdOrName, recordId, options = {}) => {
-        return db.collection(collectionIdOrName).getOne(recordId, options);
-    })
-
-    Alpine.magic('getList', (el, { Alpine }) => (collectionIdOrName, page = '1', perPage = '50', options = {}) => {
-        return db.collection(collectionIdOrName).getList(page, perPage, options);
-    })
-
-    Alpine.magic('getFullList', (el, { Alpine }) => (collectionIdOrName, options = {}) => {
-        return db.collection(collectionIdOrName).getFullList(options);
-    })
-
-    Alpine.magic('getFirstListItem', (el, { Alpine }) => (collectionIdOrName, filter, options = {}) => {
-        return db.collection(collectionIdOrName).getFirstListItem(filter, options);
-    })
 
     Alpine.magic('get', (el, { Alpine }) => (collectionIdOrName, arg1 = null, arg2 = null, arg3 = null) => {
         switch (true) {
@@ -66,6 +52,108 @@ const init = () => {
                 return [];
             }
         }
+    })
+
+    const collections = document.querySelectorAll(`[${prefix}-collection]`);
+    for (const collection of collections) {
+        if (!collection.hasAttribute(`${prefix}-data`)) {
+            collection.setAttribute(`${prefix}-data`, '');
+        }
+    }
+
+    Alpine.directive('action', (el, { value, modifiers, expression }, { Alpine, effect, cleanup, evaluate }) => {
+
+        const handleAction = async (e) => {
+            e.preventDefault();
+            const collection = el.getAttribute(`${prefix}-collection`);
+            const record = evaluate(el.getAttribute(`${prefix}-record`));
+            const action = el.getAttribute(`${prefix}-action`);
+
+            const fields = Alpine.$data(el) || {};
+
+            if (el.tagName === 'FORM') {
+                const formData = new FormData(el);
+                for (const [key, value] of formData.entries()) {
+                    fields[key] = value;
+                }
+            }
+
+            switch (action) {
+                case 'create': {
+                    try {
+                        await db.collection(collection).create(fields);
+                    } catch (error) {
+                        console.error(error);
+                    }
+                    break;
+                }
+                case 'update': {
+                    try {
+                        await db.collection(collection).update(record, fields);
+                    } catch (error) {
+                        console.error(error);
+                    }
+                    break;
+                }
+                case 'delete': {
+                    try {
+                        await db.collection(collection).delete(record);
+                    } catch (error) {
+                        console.error(error);
+                    }
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+        }
+
+        effect(() => {
+            switch (el.tagName) {
+                case 'FORM': {
+                    el.addEventListener('submit', handleAction);
+                    break;
+                }
+                default: {
+                    el.addEventListener('click', handleAction);
+                    break;
+                }
+            }
+        });
+    })
+
+    Alpine.directive('collection', (el, { value, modifiers, expression }, { Alpine, effect, cleanup, evaluate }) => {
+
+        // If the element has the action attribute, we don't want to do anything
+        if (el.hasAttribute(`${prefix}-action`)) {
+            return;
+        }
+
+        const elData = Alpine.$data(el);
+        elData[expression] = [];
+        effect(async () => {
+            try {
+
+                const page = el.getAttribute(`${prefix}-page`) ? Number(el.getAttribute(`${prefix}-page`)) : 1;
+                const limit = el.getAttribute(`${prefix}-limit`) ? Number(el.getAttribute(`${prefix}-limit`)) : 500;
+                const sort = el.getAttribute(`${prefix}-sort`) ? el.getAttribute(`${prefix}-sort`) : null;
+                const filter = el.getAttribute(`${prefix}-filter`) ? JSON.parse(el.getAttribute(`${prefix}-filter`)) : null;
+                const expand = el.getAttribute(`${prefix}-expand`) ? JSON.parse(el.getAttribute(`${prefix}-expand`)) : null;
+                const fields = el.getAttribute(`${prefix}-fields`) ? JSON.parse(el.getAttribute(`${prefix}-fields`)) : null;
+
+                const data = await db.collection(expression).getList(page, limit, {
+                    sort,
+                    filter,
+                    expand,
+                    fields
+                });
+                elData[expression] = data.items;
+
+            } catch (error) {
+                console.error(error);
+            }
+        })
     })
 
     Alpine.magic('create', (el, { Alpine }) => (collectionIdOrName, bodyParams, options) => {
@@ -109,6 +197,22 @@ const init = () => {
     for (const [key, value] of Object.entries(commands)) {
         Object.defineProperty(globalThis, key, { get: value });
     }
+
+    // Register a web component to display the admin in an iframe
+    class CommradAdmin extends HTMLElement {
+        constructor() {
+            super();
+            const shadow = this.attachShadow({ mode: 'open' });
+            const iframe = document.createElement('iframe');
+            iframe.src = '/_/';
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            shadow.appendChild(iframe);
+        }
+    }
+
+    customElements.define(`${prefix}-admin`, CommradAdmin);
 
 }
   
