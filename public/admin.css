@@ -1,5 +1,5 @@
 :root {
-    /* --baseFontFamily: sans-serif, emoji;
+    --baseFontFamily: sans-serif, emoji;
     --monospaceFontFamily: monospace, emoji;
     --iconFontFamily: "remixicon";
     --txtPrimaryColor: #000;
@@ -52,5 +52,5 @@
     --baseRadius: 0px;
     --lgRadius: 0px;
     --btnRadius: px;
-    --accent-color: var(--primaryColor); */
+    --accent-color: var(--primaryColor);
 }

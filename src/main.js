@@ -66,7 +66,7 @@ const init = () => {
         const handleAction = async (e) => {
             e.preventDefault();
             const collection = el.getAttribute(`${prefix}-collection`);
-            const record = evaluate(el.getAttribute(`${prefix}-record`));
+            const record = el.hasAttribute(`${prefix}-record`) ? evaluate(el.getAttribute(`${prefix}-record`)) : null;
             const action = el.getAttribute(`${prefix}-action`);
 
             const fields = Alpine.$data(el) || {};
@@ -103,6 +103,49 @@ const init = () => {
                     }
                     break;
                 }
+                case 'logout': {
+                    db.authStore.clear();
+                    break;
+                }
+                case 'login': {
+                    const username = fields.username;
+                    const email = fields.email;
+                    const usernameOrEmail = username || email;
+                    const password = fields.password;
+                    try {
+                        await db.collection(collection ?? 'users').authWithPassword(usernameOrEmail, password);
+                    } catch (error) {
+                        console.error(error);
+                    }
+                    break;
+                }
+                case 'oauth2': {
+                    const provider = el.getAttribute(`${prefix}-provider`);
+                    try {
+                        await db.collection(collection ?? 'users').authWithOAuth2({ provider });
+                    } catch (error) {
+                        console.error(error);
+                    }
+                    break;
+                }
+                case 'signup': {
+                    const username = fields.username;
+                    const email = fields.email;
+                    const usernameOrEmail = username || email;
+                    const password = fields.password;
+                    const passwordConfirm = fields.passwordConfirm || password;
+                    try {
+                        await db.collection(collection ?? 'users').create({
+                            username,
+                            email,
+                            password,
+                            passwordConfirm
+                        })
+                    } catch (error) {
+                        console.error(error);
+                    }
+                    break;
+                }
                 default: {
                     break;
                 }
@@ -134,14 +177,13 @@ const init = () => {
         elData[expression] = [];
         effect(async () => {
             try {
-
                 const page = el.getAttribute(`${prefix}-page`) ? Number(el.getAttribute(`${prefix}-page`)) : 1;
                 const limit = el.getAttribute(`${prefix}-limit`) ? Number(el.getAttribute(`${prefix}-limit`)) : 500;
                 const sort = el.getAttribute(`${prefix}-sort`) ? el.getAttribute(`${prefix}-sort`) : null;
                 const filter = el.getAttribute(`${prefix}-filter`) ? JSON.parse(el.getAttribute(`${prefix}-filter`)) : null;
                 const expand = el.getAttribute(`${prefix}-expand`) ? JSON.parse(el.getAttribute(`${prefix}-expand`)) : null;
                 const fields = el.getAttribute(`${prefix}-fields`) ? JSON.parse(el.getAttribute(`${prefix}-fields`)) : null;
-
+                const realtime = el.hasAttribute(`${prefix}-realtime`);
                 const data = await db.collection(expression).getList(page, limit, {
                     sort,
                     filter,
@@ -149,7 +191,30 @@ const init = () => {
                     fields
                 });
                 elData[expression] = data.items;
-
+                if (realtime) {
+                    db.collection(expression).subscribe('*', function (e) {
+                        switch (e.action) {
+                            case 'create': {
+                                elData[expression].push(e.record);
+                                break;
+                            }
+                            case 'update': {
+                                const index = elData[expression].findIndex(record => record.id === e.record.id);
+                                if (index !== -1) {
+                                    elData[expression][index] = e.record;
+                                }
+                                break;
+                            }
+                            case 'delete': {
+                                const index = elData[expression].findIndex(record => record.id === e.record.id);
+                                if (index !== -1) {
+                                    elData[expression].splice(index, 1);
+                                }
+                                break;
+                            }
+                        }
+                    });
+                }
             } catch (error) {
                 console.error(error);
             }

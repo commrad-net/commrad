@@ -208,6 +208,9 @@ func adminStylesMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 				.page-footer a, .page-footer .delimiter { 
 					display: none; 
 				}
+				.page-header .btns-group > button:first-child {
+					display: none;
+				}
 			</style>
 			<link rel="stylesheet" href="/admin.css">
 			</head>`, 1)
