@@ -279,6 +279,26 @@ const init = () => {
 
     customElements.define(`${prefix}-admin`, CommradAdmin);
 
+    class CommradRecorder extends HTMLElement {
+
+        constructor() {
+            super();
+
+        }
+
+        connectedCallback() {
+        }
+
+        disconnectedCallback() {
+        }
+
+        attributeChangedCallback(name, oldValue, newValue) {
+        }
+
+    }
+
+    customElements.define(`${prefix}-recorder`, CommradRecorder);
+
 }
   
 init();

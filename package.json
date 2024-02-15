@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "npx vite build --watch & go run main.go serve --devMode",
     "build": "npx vite build"
   },
   "keywords": [],

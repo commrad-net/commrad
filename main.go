@@ -92,6 +92,14 @@ func main() {
 		"fallback the request to index.html on missing static path (eg. when pretty urls are used with SPA)",
 	)
 
+	var devMode bool
+	app.RootCmd.PersistentFlags().BoolVar(
+		&devMode,
+		"devMode",
+		false,
+		"enable/disable development mode",
+	)
+
 	var queryTimeout int
 	app.RootCmd.PersistentFlags().IntVar(
 		&queryTimeout,
@@ -132,8 +140,13 @@ func main() {
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 
 		e.Router.Use(adminStylesMiddleware)
-		// serves static files from the provided public dir (if exists)
-		e.Router.GET("/commrad/*", apis.StaticDirectoryHandler(DistDirFS, false))
+		// If not in dev mode, serve the static files from the embedded dist directory, otherwise serve from the OS dist directory
+		if devMode {
+			e.Router.GET("/commrad/*", apis.StaticDirectoryHandler(os.DirFS(devDistDir()), false))
+		} else {
+			e.Router.GET("/commrad/*", apis.StaticDirectoryHandler(DistDirFS, false))
+		}
+
 		e.Router.GET("/*", apis.StaticDirectoryHandler(os.DirFS(publicDir), indexFallback))
 
 		return nil
@@ -255,13 +268,13 @@ func defaultPublicDir() string {
 	return filepath.Join(os.Args[0], "../public")
 }
 
-func defaultDataDir() string {
+func devDistDir() string {
 	if strings.HasPrefix(os.Args[0], os.TempDir()) {
 		// most likely ran with go run
-		return "./data"
+		return "./dist"
 	}
 
-	return filepath.Join(os.Args[0], "../public")
+	return filepath.Join(os.Args[0], "../dist")
 }
 
 func defaultMigrationsDir() string {
