@@ -1,5 +1,8 @@
 import Alpine from 'alpinejs'
 import PocketBase from 'pocketbase'
+import register from 'preact-custom-element';
+
+import CommradInput from './input';
 
 const scriptTag = document.currentScript;
 const scriptTagData = scriptTag.dataset;
@@ -279,25 +282,8 @@ const init = () => {
 
     customElements.define(`${prefix}-admin`, CommradAdmin);
 
-    class CommradRecorder extends HTMLElement {
+    register(CommradInput, `${prefix}-input`, ['type'], { shadow: false });
 
-        constructor() {
-            super();
-
-        }
-
-        connectedCallback() {
-        }
-
-        disconnectedCallback() {
-        }
-
-        attributeChangedCallback(name, oldValue, newValue) {
-        }
-
-    }
-
-    customElements.define(`${prefix}-recorder`, CommradRecorder);
 
 }
   
