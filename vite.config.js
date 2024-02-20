@@ -25,4 +25,5 @@ export default defineConfig({
       'react-dom': 'preact/compat'
     },
   },
+  publicDir: false,
 });
