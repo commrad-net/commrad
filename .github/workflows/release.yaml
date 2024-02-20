@@ -3,37 +3,49 @@ name: basebuild
 on:
   pull_request:
   push:
-    # run only against tags
-    tags:
-      - "*"
 
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: 20.8.1
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v3
         with:
           go-version: '>=1.21.6'
 
       # This step usually is not needed because the /ui/dist is pregenerated locally
       # but its here to ensure that each release embeds the latest admin ui artifacts.
       # If the artificats differs, a "dirty error" is thrown - https://goreleaser.com/errors/dirty/
-      - name: Build Commrad Client
+      - name: Build Commrad Library
         run: npm ci && npm run build
 
+      # Temporary disable as the types can have random generated identifiers making it non-deterministic.
+      #
+      # # Similar to the above, the jsvm types are pregenerated locally
+      # # but its here to ensure that it wasn't forgotten to be executed.
+      # - name: Generate jsvm types
+      #   run: go run ./plugins/jsvm/internal/types/types.go
+
+      # The prebuilt golangci-lint doesn't support go 1.18+ yet
+      # https://github.com/golangci/golangci-lint/issues/2649
+      # - name: Run linter
+      #   uses: golangci/golangci-lint-action@v3
+
+      - name: Run tests
+        run: go test ./...
+
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v3
         with:
           distribution: goreleaser
           version: latest
