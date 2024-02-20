@@ -23,9 +23,9 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-//go:embed all:dist
+//go:embed all:lib/dist
 var distDir embed.FS
-var DistDirFS = echo.MustSubFS(distDir, "dist")
+var DistDirFS = echo.MustSubFS(distDir, "lib/dist")
 
 func main() {
 	app := pocketbase.NewWithConfig(pocketbase.Config{
@@ -271,7 +271,7 @@ func defaultPublicDir() string {
 func devDistDir() string {
 	if strings.HasPrefix(os.Args[0], os.TempDir()) {
 		// most likely ran with go run
-		return "./dist"
+		return "./lib/dist"
 	}
 
 	return filepath.Join(os.Args[0], "../dist")

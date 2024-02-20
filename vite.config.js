@@ -10,10 +10,10 @@ export default defineConfig({
   build: {
     emptyOutDir: true,
     rollupOptions: {
-      input: path.resolve(__dirname, './src/main.js'),
+      input: path.resolve(__dirname, './lib/src/main.js'),
       output: {
         format: 'iife',
-        dir: path.resolve(__dirname, './dist'),
+        dir: path.resolve(__dirname, './lib/dist'),
         entryFileNames: 'lib.js',
       },
     },

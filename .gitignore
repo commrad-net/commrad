@@ -26,3 +26,6 @@ hooks
 *.njsproj
 *.sln
 *.sw?
+dist/
+
+commrad
