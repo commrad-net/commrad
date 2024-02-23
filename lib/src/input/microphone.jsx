@@ -1,161 +1,172 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import WaveSurfer from 'wavesurfer.js'
+import RecordPlugin from 'wavesurfer.js/dist/plugins/record.esm.js'
+import { FaCircle, FaStop, FaPlay, FaPause, FaTrash } from "react-icons/fa";
+
 
 const CommradMicrophone = () => {
 
-    const [active, setActive] = useState(false);
-    const [deviceId, setDeviceId] = useState(null);
-    const [recordings, setRecordings] = useState([]);
-    const [devices, setDevices] = useState([]);
     const [isRecording, setIsRecording] = useState(false);
     const [isPlaying, setIsPlaying] = useState(null);
-    const [durations, setDurations] = useState([]);
-
-    const audioRef = useRef();
-    const startTimeRef = useRef();
-    const recorderRef = useRef();
+    const [loadedRecording, setLoadedRecording] = useState(null);
+    const [recordings, setRecordings] = useState([]);
+    const [devices, setDevices] = useState([]);
+    const [selectedDevice, setSelectedDevice] = useState('');
+    
+    const waveformRef = useRef();
+    const wavesurferRef = useRef();
+    const recordRef = useRef(); 
     const dialogRef = useRef();
 
     useEffect(() => {
-        navigator.permissions.query({ name: "microphone" }).then(async(res) => {
-            if(res.state == "granted"){
-                await getDevices();
-                setActive(true);
-            }
+        navigator.mediaDevices.enumerateDevices().then((devices) => {
+            const audioDevices = devices.filter((device) => device.kind === 'audioinput');
+            setDevices(audioDevices);
+            setSelectedDevice(audioDevices[0].deviceId);
         });
-        audioRef.current.addEventListener('ended', handleEnded);
-        return () => {
-            audioRef.current.removeEventListener('ended', handleEnded);
-        }
-    }, [recordings]);
+        const wavesurfer = WaveSurfer.create({
+            container: waveformRef.current,
+            waveColor: 'rgb(200, 0, 200)',
+            progressColor: 'rgb(100, 0, 100)',
+            barWidth: 6,
+            barGap: 4,
+            barRadius: 20,
+        })
+        wavesurfer.on('finish', () => {
+            setIsPlaying(null);
+        });
+        const record = wavesurfer.registerPlugin(RecordPlugin.create({ scrollingWaveform: true, renderRecordedAudio: false }));
+        record.on('record-end', (blob) => {
+            setRecordings((prev) => [...prev, blob]);
+        });
+        wavesurferRef.current = wavesurfer;
+        recordRef.current = record;
+    }, []);
 
-    const getDevices = async () => {
-        const enumeratedDevices = await navigator.mediaDevices.enumerateDevices();
-        const audioDevices = enumeratedDevices.filter(device => device.kind === 'audioinput');
-        setDevices(audioDevices);
-        setDeviceId(audioDevices[0].deviceId);
+    const startRecording = () => {
+        recordRef.current.startRecording({ selectedDevice }).then(() => {
+            setIsRecording(true);
+        })
     }
 
-    const handleDataAvailable =(e) => {
-        setRecordings(prevRecordings => [...prevRecordings, e.data]);
-    }
-
-    const handleStart = () => {
-        setIsRecording(true);
-        startTimeRef.current = Date.now();
-    }
-
-    const handleEnded = () => {
-        setIsPlaying(null);
-    }
-
-    const handleStop = () => {
+    const stopRecording = () => {
+        recordRef.current.stopRecording();
         setIsRecording(false);
-        setDurations(prevDurations => [...prevDurations, Date.now() - startTimeRef.current]);
-        destroyRecorder();
     }
 
-    const start = async () => {
-        await setupRecorder();
-        recorderRef.current.start();
+    const loadRecording = (index) => {
+        wavesurferRef.current.loadBlob(recordings[index]);
+        wavesurferRef.current.once('ready', () => {
+            wavesurferRef.current.seekTo(0);
+            setLoadedRecording(index);
+        })
     }
 
-    const stop = () => {
-        if (isRecording) {
-            recorderRef.current.stop();
+    const playPauseRecording = (index) => {
+        if (loadedRecording === index) {
+            if (wavesurferRef.current.isPlaying()) {
+                setIsPlaying(null);
+            } else {
+                setIsPlaying(index);
+            }
+            wavesurferRef.current.playPause();
+        } else {
+            wavesurferRef.current.loadBlob(recordings[index]);
+            wavesurferRef.current.once('ready', () => {
+                wavesurferRef.current.play();
+                setLoadedRecording(index);
+                setIsPlaying(index);
+            })
         }
-    }
-
-    const setupRecorder = async () => {
-        // Get the audio stream using the default device
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: deviceId } });
-        const recorder = new MediaRecorder(stream);
-        recorder.onstart = () => handleStart();
-        recorder.onstop = () => handleStop();
-        recorder.ondataavailable = (e) => handleDataAvailable(e);
-        recorderRef.current = recorder;
-    }
-
-    const destroyRecorder = () => {
-        recorderRef.current.stream.getTracks().forEach(track => track.stop());
-        recorderRef.current = null;
-    }
-
-    const activate = async () => {
-        await getDevices();
-        setActive(true);
-    }
-
-    const deactivate = () => {
-        setActive(false);
-    }
-
-    const leadingZero = (number) => {
-        return number < 10 ? `0${number}` : number;
-    }
-
-    const readableDuration = (duration) => {
-        const milliseconds = duration % 1000;
-        const seconds = Math.floor((duration / 1000) % 60);
-        const minutes = Math.floor((duration / (1000 * 60)) % 60);
-        const hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
-        return `${leadingZero(hours)}:${leadingZero(minutes)}:${leadingZero(seconds)}.${leadingZero(milliseconds)}`;
-    }
-
-    const play = (index) => {
-        const audio = audioRef.current;
-        audio.src = URL.createObjectURL(recordings[index]);
-        audio.play();
-        setIsPlaying(index);
-    }
-
-    const pause = (index) => {
-        audioRef.current.pause();
-        setIsPlaying(null);
-    }
-
-    const remove = (index) => {
-        setRecordings(prevRecordings => prevRecordings.filter((_, i) => i !== index));
-        setDurations(prevDurations => prevDurations.filter((_, i) => i !== index));
     }
 
     return (
-        <div>
-            <audio ref={audioRef}></audio>
-            <dialog ref={dialogRef} onClick={(e) => {
-                if (e.target === dialogRef.current) dialogRef.current.close();
-            }}>
-                <select onChange={(e) => setDeviceId(e.target.value)}>
-                    {devices.map(device => <option value={device.deviceId}>{device.label}</option>)}
+        <>
+        <style>
+            {`
+                .input {
+                    width: 400px;
+                }
+                .waveform {
+                    background: lightgray;
+                    margin-bottom: 0.5rem;
+                }
+                .recordings {
+                    list-style: none;
+                    display: flex;
+                    flex-direction: column;
+                    padding: 0;
+                    gap: 6px;
+                    margin: 0;
+                    min-height: 60px;
+                }
+                .recordings li {
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-top: 0.5rem;
+                }
+                .empty {
+                    width: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 60px;
+                }
+                .controls {
+                    display: flex;
+                    margin-top: 1rem;
+                    justify-content: center;
+                }
+
+                .pauseplay {
+                    margin-right: 0.5rem;
+                }
+            `}
+        </style>
+        <div className="input">
+            <dialog ref={dialogRef}>
+                <h2>Choose a microphone</h2>
+                <select value={selectedDevice} onChange={(e) => setSelectedDevice(e.target.value)}>
+                    {devices.map((device, index) => (
+                        <option key={index} value={device.deviceId}>{device.label}</option>
+                    ))}
                 </select>
-                <button onClick={() => dialogRef.current.close()}>Close</button>
             </dialog>
-            <ul>
-                {recordings.map((recording, index) => {
-                    const duration = readableDuration(durations[index]);
-                    return <li>
-                        Recording {index + 1} - {duration}
-                        {isPlaying === index ? (
-                            <button onClick={() => pause(index)}>Pause</button>
-                        ) : (
-                            <button onClick={() => play(index)}>Play</button>
-                        )}
-                        <button onClick={() => remove(index)}>Remove</button>
-                    </li>
-                })}
-            </ul>
-            {active ? (
-                <div>
-                    {isRecording ? (
-                        <button onClick={() => stop()}>Stop</button>
-                    ) : (
-                        <button onClick={() => start()}>Record</button>
-                    )}
-                    <button onClick={() => dialogRef.current.showModal()}>Settings</button>
-                </div>
+            <div className="waveform" ref={waveformRef}></div>
+            {recordings.length > 0 ? (
+                <ul className="recordings">
+                    {recordings.map((recording, index) => (
+                        <li onClick={(e) => {
+                            if (e.target.tagName === 'BUTTON') return;
+                            wavesurferRef.current.loadBlob(recording);
+                            wavesurferRef.current.once('ready', () => {
+                                setLoadedRecording(index);
+                            })
+                        }}>
+                            <span style={{display: 'flex', alignItems: 'center'}}>
+                                <button className="pauseplay" onClick={() => playPauseRecording(index)}>{isPlaying === index ? <FaPause/> : <FaPlay/>}</button>
+                                Recording {index + 1}
+                            </span>
+                            <button onClick={() => {
+                                setRecordings((prev) => prev.filter((_, i) => i !== index));
+                                if (loadedRecording === index) {
+                                    wavesurferRef.current.empty();
+                                    setLoadedRecording(null);
+                                }
+                            }}><FaTrash/></button>
+                        </li>
+                    ))}
+                </ul>
             ) : (
-                <button onClick={() => activate()}>Activate</button>
+                <div className="empty">No recordings</div>
             )}
+            <div className="controls">
+                {isRecording ? <button onClick={() => stopRecording()}><FaStop/></button> : <button onClick={() => startRecording()}><FaCircle/></button>}
+            </div>
         </div>
+        </>
     )
 }
 

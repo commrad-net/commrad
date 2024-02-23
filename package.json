@@ -16,7 +16,9 @@
     "pocketbase": "^0.21.1",
     "preact": "^10.19.5",
     "preact-custom-element": "^4.3.0",
-    "vite": "^5.0.12"
+    "react-icons": "^5.0.1",
+    "vite": "^5.0.12",
+    "wavesurfer.js": "^7.7.3"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.12.0"
