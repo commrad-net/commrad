@@ -1,11 +1,14 @@
 <html>
     <body>
         <h1>Commrad</h1>
-        <div cr-collection="books" cr-sort="created" cr-realtime>
+        <div cr-collection="books" cr-sort="@random" cr-limit="1" cr-realtime>
             <template cr-for="book in books">
-                <div>
+                <div cr-data="{playing: false}">
                     <h2 cr-text="book.title"></h2>
-                    <button cr-action="delete" cr-collection="books" cr-record="book.id">Delete</button>
+                        <video cr-src="book.image" cr-playing="playing"></video>
+                        <button cr-on:click="playing = !playing" cr-text="playing ? 'Pause' : 'Play'"></button>
+                    <input cr-value="book.rating" type="range" min="0" max="5" cr-action="update">
+                    <button cr-action="delete">Delete</button>
                 </div>
             </template>
         </div>
