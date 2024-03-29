@@ -1,11 +1,9 @@
 <html>
     <body>
-        <h1>Commrad</h1>
-        <h2 cr-text="$url('test')" cr-data></h2>
-        <div cr-collection="books" cr-sort="@random" cr-limit="5" cr-realtime>
+        <h1>Search: <span cr-data cr-text="$url.get('s')"></span></h1>
+        <div cr-collection="books" cr-filter="title~$url.get('s')" cr-limit="4" cr-realtime>
             <template cr-for="book in books">
                 <div cr-data="{playing: false}">
-                    <a cr-href="`/book/${book.id}`">View</a>
                     <h2 cr-text="book.title"></h2>
                         <video cr-src="book.image" cr-playing="playing"></video>
                         <button cr-on:click="playing = !playing" cr-text="playing ? 'Pause' : 'Play'"></button>
@@ -15,12 +13,10 @@
             </template>
         </div>
         <form cr-collection="books" cr-action="create">
-            <!-- <input type="text" name="title"> -->
+            <input type="text" name="title">
             <button type="submit">Add</button>
         </form>
         <button cr-action="create" cr-collection="books" cr-data="{title: 'New Book'}">Add New</button>
-        <cr-input type="microphone"></cr-input>
-        <cr-input type="camera"></cr-input>
         <script src="commrad/lib.js"></script>
     </body>
 </html>
