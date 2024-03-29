@@ -1,0 +1,12 @@
+<html>
+    <head>
+        <title>Performance: 1</title>
+    </head>
+    <body>
+        <div cr-collection="books" cr-record="$url.get('id')">
+            <h1>Title: <span cr-text="record.title"></span></h1>
+            <p>Rating: <span cr-text="record.rating"></span></p>
+        </div>
+        <script src="/commrad/lib.js"></script>
+    </body>
+</html>
