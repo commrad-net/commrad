@@ -1,7 +1,7 @@
 <html>
     <body>
         <h1>Commrad</h1>
-        <h2 cr-text="$url.get('test')" cr-data></h2>
+        <h2 cr-text="$url('test')" cr-data></h2>
         <div cr-collection="books" cr-sort="@random" cr-limit="5" cr-realtime>
             <template cr-for="book in books">
                 <div cr-data="{playing: false}">

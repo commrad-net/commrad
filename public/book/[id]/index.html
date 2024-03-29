@@ -1,6 +1,6 @@
 <html>
     <body>
-        <div cr-collection="books" cr-record="$url.get('id')">
+        <div cr-collection="books" cr-record="$url('id')">
             <h1>Title: <span cr-text="record.title"></span></h1>
             <p>Rating: <span cr-text="record.rating"></span></p>
         </div>
