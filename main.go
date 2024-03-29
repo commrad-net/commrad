@@ -250,8 +250,14 @@ func handleDynamicRouteRequest(c echo.Context) error {
 	}
 
 	// Modify content to include the JSON string in a script tag at the end of the body
-	content = []byte(strings.Replace(string(content), "</head>", fmt.Sprintf(`<script>window.$pathParams = %s;</script></head>`, paramsJSON), 1))
-
+	if strings.Contains(string(content), "</head>") {
+		content = []byte(strings.Replace(string(content), "</head>", fmt.Sprintf(`<script>window.$pathParams = %s;</script></head>`, paramsJSON), 1))
+	} else {
+		if strings.Contains(string(content), "<body>") {
+			content = []byte(strings.Replace(string(content), "<body>", fmt.Sprintf(`<body><script>window.$pathParams = %s;</script>`, paramsJSON), 1))
+		}
+	}
+	
 	// Return the content of the file
 	return c.HTMLBlob(http.StatusOK, content)
 
