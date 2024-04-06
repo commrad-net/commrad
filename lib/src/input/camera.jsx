@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
 import { FaCircle, FaStop, FaCamera, FaVideo } from "react-icons/fa";
+import { FaCircleXmark, FaGear } from "react-icons/fa6";
 
-const CommradCamera = () => {
+const CommradCamera = ({onChange}) => {
 
     const previewRef = useRef();
     const imageRef = useRef();
@@ -18,6 +19,10 @@ const CommradCamera = () => {
     const [selectedMedia, setSelectedMedia] = useState(null);
     const [devices, setDevices] = useState([]);
     const [selectedDevice, setSelectedDevice] = useState(null);
+
+    useEffect(() => {
+       if (onChange) onChange(capturedMediaArr);
+    }, [capturedMediaArr]);
 
     useEffect(() => {
         if (selectedMedia) {
@@ -99,16 +104,26 @@ const CommradCamera = () => {
                 }
                 .controls {
                     display: flex;
-                    justify-content: space-between;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
                 }
 
                 .modes {
                     display: flex;
                     align-items: center;
+                    position: absolute;
+                    left: 0;
                 }
 
-                .modes button:not(.active) {
-                    opacity: 0.5;
+                .settings {
+                    position: absolute;
+                    right: 0;
+                }
+
+                .modes button.active {
+                    background: black;
+                    color: white;
                 }
                 .roll{
                     display: flex;
@@ -119,24 +134,95 @@ const CommradCamera = () => {
                     overflow-x: auto;
                     gap: 6px;
                     margin: 0;
+                    height: 6rem;
                 }
                 .roll img, .roll video {
                     aspect-ratio: 1/1;
-                    height: 60px;
+                    height: 4rem;
                     object-fit: cover;
                     cursor: pointer;
-                    margin-bottom: 1rem;
                 }
                 .media {
                     aspect-ratio: 1/1;
                     background: black;
-                    margin-bottom: 1rem;
                 }
 
                 .media img, .media video {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
+                }
+
+                .roll li {
+                    position: relative;
+                }
+
+                li img {
+                    border: 2px solid transparent;
+                }
+
+                .selected img, .selected video {
+                    border: 2px solid black;
+                }
+
+                .remove {
+                    position: absolute;
+                    top: -0.5rem;
+                    left: -0.5rem;
+                    background: white;
+                    border-radius: 50%;
+                    font-size: 1rem;
+                }
+
+                button {
+                    background: white;
+                    color: black;
+                    border: 2px solid black;
+                    aspect-ratio: 1/1;
+                    font-size: 1.2rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 2.5rem;
+                    border-radius: 6px;
+                }
+
+                .modes button {
+                    aspect-ratio: 1.25/1;
+                }
+
+                .modes button:first-child {
+                    border-radius: 0px;
+                    border-top-left-radius: 6px;
+                    border-bottom-left-radius: 6px;
+                }
+
+                .modes button:last-child {
+                    border-radius: 0px;
+                    border-top-right-radius: 6px;
+                    border-bottom-right-radius: 6px;
+                }
+
+                .capture {
+                    font-size: 1.3rem;
+                    background: red;
+                    border-radius: 50%;
+                    color: white;
+                    height: 3rem;
+                    border: 2px solid red;
+                }
+
+                .capture.inverse {
+                    background: white;
+                    color: red;
+                    border: 2px solid red;
+                }
+
+                .empty {
+                    height: 6rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
             `}
         </style>
@@ -163,19 +249,28 @@ const CommradCamera = () => {
                 <video ref={previewRef} autoPlay playsInline muted></video>
             )}
             </div>
-            <ul className="roll">
-                {capturedMediaArr.map((media, index) => (
-                    <li key={index} onClick={() => {
-                        setSelectedMedia(media);
-                    }}>
-                        {media.includes('image') ? (
-                            <img src={media}/>
-                        ) : (
-                            <video src={media}/>
-                        )}
-                    </li>
-                ))}
-            </ul>
+            {capturedMediaArr.length === 0 && <div className="empty">No media captured</div>}
+            {capturedMediaArr.length > 0 && (
+                <ul className="roll">
+                    {capturedMediaArr.map((media, index) => (
+                        <li className={selectedMedia === media ? "selected" : null} key={index} onClick={() => {
+                            setSelectedMedia(media);
+                        }}>
+                            {selectedMedia === media && <div class="remove" onClick={ () => {
+                                setCapturedMediaArr(capturedMediaArr.filter((m) => m !== media));
+                                setSelectedMedia(null);
+                            }}>
+                                <FaCircleXmark/>
+                            </div>}
+                            {media.includes('image') ? (
+                                <img src={media}/>
+                            ) : (
+                                <video src={media}/>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            )}
             <div className="controls">
                 <div className="modes">
                     <button onClick={() => {
@@ -188,25 +283,25 @@ const CommradCamera = () => {
                     }} className={mode === 'image' ? 'active' : ''}><FaCamera/></button>
                 </div>
                 {selectedMedia ? (
-                    <button onClick={() => setSelectedMedia(null)} style={{opacity: 0.5}}>
-                        <FaCircle/>
+                    <button onClick={() => setSelectedMedia(null)} className="capture inverse">
+                        {mode === 'video' ? <FaVideo/> : <FaCamera/>}
                     </button>
                 ) : (
                     <>
                         {mode === 'video' ? (
                             <>
                                 {isRecording ? (
-                                    <button onClick={() => stopRecording()}><FaStop/></button>
+                                    <button onClick={() => stopRecording()} className="capture inverse"><FaStop/></button>
                                 ) : (
-                                    <button onClick={() => startRecording()}><FaCircle/></button>
+                                    <button onClick={() => startRecording()} className="capture"><FaVideo/></button>
                                 )}
                             </>
                         ) : (
-                            <button onClick={() => takePhoto()}><FaCamera/></button>
+                            <button onClick={() => takePhoto()} className="capture"><FaCamera/></button>
                         )}
                     </>
                 )}
-                <button onClick={() => dialogRef.current.showModal()}>Settings</button>
+                <button className="settings" onClick={() => dialogRef.current.showModal()}><FaGear/></button>
             </div>
         </div>
         </>

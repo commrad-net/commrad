@@ -2,11 +2,21 @@
     <body>
         <h1>Search: <span cr-data cr-text="$url('s')"></span></h1>
         <div cr-collection="books" cr-filter="title~$url('s')" cr-limit="4" cr-realtime>
-            <template cr-for="book in books">
+            <template cr-for="book in books" :key="book">
                 <div cr-data="{playing: false}">
                     <h2 cr-text="book.title"></h2>
-                        <video cr-src="book.image" cr-playing="playing"></video>
-                        <button cr-on:click="playing = !playing" cr-text="playing ? 'Pause' : 'Play'"></button>
+                    <template cr-if="Array.isArray(book.image) &&  book.image.length > 1">
+                        <div>
+                            <h1>Multiple files</h1>
+                            <template cr-for="image in book.image" :key="image">
+                                <audio cr-src="image" cr-playing="playing" controls></audio>
+                            </template>
+                        </div>
+                    </template>
+                    <template cr-if="book.image.length === 1">
+                        <audio cr-src="book.image" cr-playing="playing" controls></audio>
+                    </template>
+                    <button cr-on:click="playing = !playing" cr-text="playing ? 'Pause' : 'Play'"></button>
                     <input cr-value="book.rating" type="range" min="0" max="5" cr-action="update">
                     <button cr-action="delete">Delete</button>
                 </div>

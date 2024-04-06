@@ -4,7 +4,7 @@ import RecordPlugin from 'wavesurfer.js/dist/plugins/record.esm.js'
 import { FaCircle, FaStop, FaPlay, FaPause, FaTrash } from "react-icons/fa";
 
 
-const CommradMicrophone = () => {
+const CommradMicrophone = ({onChange}) => {
 
     const [isRecording, setIsRecording] = useState(false);
     const [isPlaying, setIsPlaying] = useState(null);
@@ -12,6 +12,11 @@ const CommradMicrophone = () => {
     const [recordings, setRecordings] = useState([]);
     const [devices, setDevices] = useState([]);
     const [selectedDevice, setSelectedDevice] = useState('');
+
+    useEffect(() => {
+        const objectURLArray = recordings.map((recording) => URL.createObjectURL(recording));
+        onChange(objectURLArray);
+    }, [recordings]);
     
     const waveformRef = useRef();
     const wavesurferRef = useRef();
@@ -26,7 +31,7 @@ const CommradMicrophone = () => {
         });
         const wavesurfer = WaveSurfer.create({
             container: waveformRef.current,
-            waveColor: 'rgb(200, 0, 200)',
+            waveColor: 'rgb(255, 255, 255)',
             progressColor: 'rgb(100, 0, 100)',
             barWidth: 6,
             barGap: 4,
@@ -88,8 +93,9 @@ const CommradMicrophone = () => {
                     width: 400px;
                 }
                 .waveform {
-                    background: lightgray;
+                    background: black;
                     margin-bottom: 0.5rem;
+                    border-radius: 4px;
                 }
                 .recordings {
                     list-style: none;
