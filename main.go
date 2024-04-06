@@ -201,6 +201,11 @@ func handleDynamicRouteRequest(c echo.Context) error {
 	params := c.PathParams()
 	htmlPath := c.Request().URL.Path
 
+	// If there are no path parameters, return the file
+	if len(params) == 0 {
+		return c.File(htmlPath)
+	}
+
 	paramsJSON := "{"
 	// Iterate over the path parameters and add them to the JSON string
 	for _, value := range params {
@@ -224,6 +229,11 @@ func handleDynamicRouteRequest(c echo.Context) error {
 	// Remove the last comma from the JSON string
 	paramsJSON = strings.TrimSuffix(paramsJSON, ",")
 	paramsJSON += "}"
+
+	// If htmlPath does not start with a slash, add a slash to the beginning
+	if !strings.HasPrefix(htmlPath, "/") {
+		htmlPath = fmt.Sprintf("/%s", htmlPath)
+	}
 
 	// Append the publicDir to the HTML path
 	htmlPath = fmt.Sprintf("public%s", htmlPath)
@@ -271,24 +281,26 @@ func rewriteURL(next echo.HandlerFunc) echo.HandlerFunc {
 			return next(c)
 		}
 
-        urlPath := c.Request().URL.Path
+        requestPath := c.Request().URL.Path
+		urlPath := requestPath
 
         // Check if the path ends with a slash (indicating a directory)
-        if strings.HasSuffix(urlPath, "/") {
-            newPath := urlPath + "index.html"
-            c.Request().URL.Path = newPath
-        }
-
-		// Check if the path does not end with .html
-		if !strings.HasPrefix(urlPath, ".html") {
-			newPath := urlPath + ".html"
-			// Create a check path by appending publicDir to the newPath
-			checkPath := fmt.Sprintf("public%s", newPath)
-			if _, err := os.Stat(checkPath); os.IsNotExist(err) {
-				newPath = urlPath + "/index.html"
+        if strings.HasSuffix(requestPath, "/") {
+            urlPath += "index.html"
+        } else {
+			// Check if the path does not end with .html
+			if !strings.HasSuffix(requestPath, ".html") {
+				// Create a check path by prepending publicDir to the newPath
+				checkPath := fmt.Sprintf("public%s.html", urlPath)
+				if _, err := os.Stat(checkPath); os.IsNotExist(err) {
+					urlPath = requestPath + "/index.html"
+				} else {
+					urlPath += ".html"
+				}
 			}
-			c.Request().URL.Path = newPath
 		}
+
+		c.Request().URL.Path = urlPath
 
         return next(c)
     }
