@@ -8,7 +8,7 @@ export default defineConfig({
     jsxInject: `import { h, Fragment } from 'preact'`,
   },
   build: {
-    emptyOutDir: true,
+    emptyOutDir: false,
     rollupOptions: {
       input: path.resolve(__dirname, './lib/src/main.js'),
       output: {
