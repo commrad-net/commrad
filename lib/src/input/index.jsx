@@ -12,10 +12,9 @@ const CommradInput = ({ type = 'World', node}) => {
         if (!inputRef.current) {
             inputRef.current = document.createElement('input');
             inputRef.current.type = 'file';
-            //inputRef.current.style.display = 'none';
+            inputRef.current.style.display = 'none';
             inputRef.current.name = node.hasAttribute('name') ? node.getAttribute('name') : type;
         }
-
         if (node) {
             const form = node.closest('form');
             if (form) {
@@ -36,7 +35,6 @@ const CommradInput = ({ type = 'World', node}) => {
         const dataTransfer = new DataTransfer();
         for (const m of media) {
             let blob = await fetch(m).then(r => r.blob());
-            console.log('blob:', blob);
             // Get file type from blob type
             const file = new File([blob], 'test', { type: blob.type });
             dataTransfer.items.add(file);
