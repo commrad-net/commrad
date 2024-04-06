@@ -5,7 +5,7 @@
         <div cr-collection="books" cr-sort="@random" cr-limit="5" cr-realtime>
             <template cr-for="book in books">
                 <div cr-data="{playing: false}">
-                    <a cr-href="`/book/${book.id}`">View</a>
+                    <a cr-href="`/${book.id}`">View</a>
                     <h2 cr-text="book.title"></h2>
                         <video cr-src="book.image" cr-playing="playing"></video>
                         <button cr-on:click="playing = !playing" cr-text="playing ? 'Pause' : 'Play'"></button>

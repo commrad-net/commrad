@@ -1,7 +1,7 @@
 <html>
     <body>
-        <h1>Search: <span cr-data cr-text="$url.get('s')"></span></h1>
-        <div cr-collection="books" cr-filter="title~$url.get('s')" cr-limit="4" cr-realtime>
+        <h1>Search: <span cr-data cr-text="$url('s')"></span></h1>
+        <div cr-collection="books" cr-filter="title~$url('s')" cr-limit="4" cr-realtime>
             <template cr-for="book in books">
                 <div cr-data="{playing: false}">
                     <h2 cr-text="book.title"></h2>
