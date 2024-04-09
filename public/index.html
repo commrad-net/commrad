@@ -1,26 +1,18 @@
-<html>
-    <body>
-        <h1>Commrad</h1>
-        <h2 cr-text="$url('test')" cr-data></h2>
-        <div cr-collection="books" cr-sort="@random" cr-limit="5" cr-realtime>
-            <template cr-for="book in books">
-                <div cr-data="{playing: false}">
-                    <a cr-href="`/${book.id}`">View</a>
-                    <h2 cr-text="book.title"></h2>
-                        <video cr-src="book.image" cr-playing="playing"></video>
-                        <button cr-on:click="playing = !playing" cr-text="playing ? 'Pause' : 'Play'"></button>
-                    <input cr-value="book.rating" type="range" min="0" max="5" cr-action="update">
-                    <button cr-action="delete">Delete</button>
-                </div>
-            </template>
-        </div>
-        <form cr-collection="books" cr-action="create">
-            <!-- <input type="text" name="title"> -->
-            <button type="submit">Add</button>
-        </form>
-        <button cr-action="create" cr-collection="books" cr-data="{title: 'New Book'}">Add New</button>
-        <cr-input type="microphone"></cr-input>
-        <cr-input type="camera"></cr-input>
-        <script src="commrad/lib.js"></script>
-    </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Radiator Sounds</title>
+<link rel='stylesheet' href='style.css'/>
+</head>
+<body>
+    <div cr-data="{joined: false}" cr-collection="performances">
+        <template cr-for="performance in performances">
+            <a cr-text="performance.title" cr-href="`${performance.id}`"></a>
+        </template>
+    </div>
+    <script src="commrad/lib.js"></script>
+</body>
 </html>
