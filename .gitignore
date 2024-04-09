@@ -29,3 +29,6 @@ hooks
 dist/
 
 commrad
+public
+data
+migrations
