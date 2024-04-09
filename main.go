@@ -138,8 +138,9 @@ func main() {
 
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 
+		e.Router.Pre(normalizePath)
+		e.Router.Use(rewritePath)
 		e.Router.Use(adminStylesMiddleware)
-		e.Router.Pre(rewriteURL)
 		// If not in dev mode, serve the static files from the embedded dist directory, otherwise serve from the OS dist directory
 		if devMode {
 			e.Router.GET("/commrad/*", apis.StaticDirectoryHandler(os.DirFS(devDistDir()), false))
@@ -158,6 +159,11 @@ func main() {
 			// If the file path ends with .html and includes [] brackets, it is a dynamic route
 			if filepath.Ext(path) == ".html" && strings.Contains(path, "[") && strings.Contains(path, "]") {
 				route := createDynamicRouteFromPath(path)
+				// If the route ends with /index, register the route without the /index
+				if strings.HasSuffix(route, "/index") {
+					routeWithoutIndex := strings.TrimSuffix(route, "/index")
+					e.Router.GET(routeWithoutIndex, handleDynamicRouteRequest)
+				}
 				e.Router.GET(route, handleDynamicRouteRequest)
 			}
 	
@@ -191,6 +197,9 @@ func createDynamicRouteFromPath(path string) string {
 	// Replace any string contained within [] with the same string but with a colon in front
 	route := regexp.MustCompile(`\[(.*?)\]`).ReplaceAllString(path, ":$1")
 
+	// Remove the .html extension
+	route = strings.TrimSuffix(route, ".html")
+
 	return route
 }
 
@@ -201,8 +210,19 @@ func handleDynamicRouteRequest(c echo.Context) error {
 	params := c.PathParams()
 	htmlPath := c.Request().URL.Path
 
-	// If there are no path parameters, return the file
-	if len(params) == 0 {
+	// Create a checkPath variable to check if a file exists at the path
+	checkPath := fmt.Sprintf("public%s.html", htmlPath)
+
+	// Check if the file exists
+	if _, err := os.Stat(checkPath); err == nil {
+		// If the file exists, return the file
+		return c.File(checkPath)
+	}
+
+	// If the file has an extension, return the file
+	if len(params) == 0 || strings.Contains(htmlPath, ".") {
+		// Prepend the public directory to the HTML path
+		htmlPath = fmt.Sprintf("public%s", htmlPath)
 		return c.File(htmlPath)
 	}
 
@@ -236,7 +256,7 @@ func handleDynamicRouteRequest(c echo.Context) error {
 	}
 
 	// Append the publicDir to the HTML path
-	htmlPath = fmt.Sprintf("public%s", htmlPath)
+	htmlPath = fmt.Sprintf("public%s.html", htmlPath)
 
 	// Check if the file exists
 	if _, err := os.Stat(htmlPath); os.IsNotExist(err) {
@@ -273,38 +293,48 @@ func handleDynamicRouteRequest(c echo.Context) error {
 
 }
 
-func rewriteURL(next echo.HandlerFunc) echo.HandlerFunc {
-    return func(c echo.Context) error {
+// normalizePath removes the .html extension and trailing slash from the URL path
+func normalizePath(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		path := c.Request().URL.Path
 
-		// If the request is for the admin or has an extension proceed with the next middleware
+		// Remove the .html extension if it exists
+		path = strings.TrimSuffix(path, ".html")
+
+		// Remove the trailing slash from the URL, if it exists and the path is not just the root "/"
+		if path != "/" && strings.HasSuffix(path, "/") {
+			path = path[:len(path)-1]
+		}
+
+		// Update the request path
+		c.Request().URL.Path = path
+
+		return next(c)
+	}
+}
+
+// rewritePath adds /index to the request path if the last path parameter matches the ending of the request path
+func rewritePath(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// If the request is for the admin or has an extension, proceed with the next middleware
 		if strings.HasPrefix(c.Request().URL.Path, "/_") || strings.HasPrefix(c.Request().URL.Path, "/api") || strings.Contains(c.Request().URL.Path, ".") {
 			return next(c)
 		}
 
-        requestPath := c.Request().URL.Path
-		urlPath := requestPath
+		params := c.PathParams()
 
-        // Check if the path ends with a slash (indicating a directory)
-        if strings.HasSuffix(requestPath, "/") {
-            urlPath += "index.html"
-        } else {
-			// Check if the path does not end with .html
-			if !strings.HasSuffix(requestPath, ".html") {
-				// Create a check path by prepending publicDir to the newPath
-				checkPath := fmt.Sprintf("public%s.html", urlPath)
-				if _, err := os.Stat(checkPath); os.IsNotExist(err) {
-					urlPath = requestPath + "/index.html"
-				} else {
-					urlPath += ".html"
-				}
+		// If the value of the last path parameter matches the ending of the request path, then add /index to the request path
+		if len(params) > 0 {
+			lastParam := params[len(params)-1]
+			if strings.HasSuffix(c.Request().URL.Path, lastParam.Value) {
+				c.Request().URL.Path = fmt.Sprintf("%s/index", c.Request().URL.Path)
 			}
 		}
 
-		c.Request().URL.Path = urlPath
-
-        return next(c)
-    }
+		return next(c)
+	}
 }
+
 func adminStylesMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 
