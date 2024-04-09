@@ -300,9 +300,7 @@ func customHTTPErrorHandler(c echo.Context, err error) {
     if he, ok := err.(*echo.HTTPError); ok {
         code = he.Code
     }
-	// Print the error message
-	log.Printf("Error: %s", err.Error())
-    // Create an error page variable using the code and the public directory
+\    // Create an error page variable using the code and the public directory
     errorPage := fmt.Sprintf("public/%d.html", code)
     // Check if the error page exists
     if _, err := os.Stat(errorPage); err == nil {
