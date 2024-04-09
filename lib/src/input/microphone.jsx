@@ -1,7 +1,9 @@
 import { useRef, useState, useEffect } from 'react';
 import WaveSurfer from 'wavesurfer.js'
 import RecordPlugin from 'wavesurfer.js/dist/plugins/record.esm.js'
-import { FaCircle, FaStop, FaPlay, FaPause, FaTrash } from "react-icons/fa";
+import { FaCircle, FaStop, FaPlay, FaPause, FaTrash, FaMicrophone } from "react-icons/fa";
+import { FaCircleXmark } from 'react-icons/fa6';
+import { PiWaveformBold } from "react-icons/pi";
 
 
 const CommradMicrophone = ({onChange}) => {
@@ -31,8 +33,8 @@ const CommradMicrophone = ({onChange}) => {
         });
         const wavesurfer = WaveSurfer.create({
             container: waveformRef.current,
-            waveColor: 'rgb(255, 255, 255)',
-            progressColor: 'rgb(100, 0, 100)',
+            waveColor: '#FFFFFF',
+            progressColor: '#FF0000',
             barWidth: 6,
             barGap: 4,
             barRadius: 20,
@@ -90,44 +92,90 @@ const CommradMicrophone = ({onChange}) => {
         <style>
             {`
                 .input {
-                    width: 400px;
+                    width: 600px;
                 }
                 .waveform {
                     background: black;
-                    margin-bottom: 0.5rem;
-                    border-radius: 4px;
+                    border-radius: 6px;
+                    aspect-ratio: 16 / 9;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .waveform > div {
+                    width: 100%;
                 }
                 .recordings {
-                    list-style: none;
                     display: flex;
-                    flex-direction: column;
+                    list-style: none;
                     padding: 0;
-                    gap: 6px;
+                    align-items: center;
+                    justify-content: flex-end;
+                    overflow-x: auto;
+                    gap: 10px;
                     margin: 0;
-                    min-height: 60px;
+                    height: 6rem;
                 }
                 .recordings li {
+                    aspect-ratio: 1/1;
+                    height: 4rem;
+                    border: transparent 2px solid;
+                    background: lightgray;
                     cursor: pointer;
                     display: flex;
                     align-items: center;
-                    justify-content: space-between;
-                    margin-top: 0.5rem;
+                    justify-content: center;
+                    position: relative;
+                    border-radius: 6px;
+                    font-size: 2rem;
+                }
+                .recordings li.selected {
+                    border: black 2px solid;
                 }
                 .empty {
                     width: 100%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    min-height: 60px;
+                    height: 6rem;
                 }
                 .controls {
                     display: flex;
-                    margin-top: 1rem;
                     justify-content: center;
                 }
 
                 .pauseplay {
                     margin-right: 0.5rem;
+                }
+
+                button {
+                    background: white;
+                    border: 2px black solid;
+                    aspect-ratio: 1 / 1;
+                    font-size: 1rem;
+                    border-radius: 6px;
+                }
+
+                .capture {
+                    font-size: 1.3rem;
+                    background: red;
+                    border-radius: 50%;
+                    color: white;
+                    height: 3rem;
+                    border: 2px solid red;
+                }
+
+                .inverse {
+                    color: red;
+                    background: white;
+                }
+                .remove {
+                    position: absolute;
+                    top: -0.5rem;
+                    left: -0.5rem;
+                    background: white;
+                    border-radius: 50%;
+                    font-size: 1rem;
                 }
             `}
         </style>
@@ -140,28 +188,28 @@ const CommradMicrophone = ({onChange}) => {
                     ))}
                 </select>
             </dialog>
-            <div className="waveform" ref={waveformRef}></div>
+            <div className="waveform"><div  ref={waveformRef}/></div>
             {recordings.length > 0 ? (
                 <ul className="recordings">
                     {recordings.map((recording, index) => (
-                        <li onClick={(e) => {
+                        <li className={loadedRecording === index ? 'selected' : null} onClick={(e) => {
                             if (e.target.tagName === 'BUTTON') return;
                             wavesurferRef.current.loadBlob(recording);
                             wavesurferRef.current.once('ready', () => {
                                 setLoadedRecording(index);
+                                playPauseRecording(index);
                             })
                         }}>
-                            <span style={{display: 'flex', alignItems: 'center'}}>
-                                <button className="pauseplay" onClick={() => playPauseRecording(index)}>{isPlaying === index ? <FaPause/> : <FaPlay/>}</button>
-                                Recording {index + 1}
-                            </span>
-                            <button onClick={() => {
+                            {loadedRecording === index ? (
+                                <div className="remove" onClick={() => {
                                 setRecordings((prev) => prev.filter((_, i) => i !== index));
                                 if (loadedRecording === index) {
                                     wavesurferRef.current.empty();
                                     setLoadedRecording(null);
                                 }
-                            }}><FaTrash/></button>
+                            }}><FaCircleXmark/></div>
+                            ) : null}
+                            <PiWaveformBold/>
                         </li>
                     ))}
                 </ul>
@@ -169,7 +217,7 @@ const CommradMicrophone = ({onChange}) => {
                 <div className="empty">No recordings</div>
             )}
             <div className="controls">
-                {isRecording ? <button onClick={() => stopRecording()}><FaStop/></button> : <button onClick={() => startRecording()}><FaCircle/></button>}
+                {isRecording ? <button className="capture inverse" onClick={() => stopRecording()}><FaStop/></button> : <button className="capture" onClick={() => startRecording()}><FaMicrophone/></button>}
             </div>
         </div>
         </>

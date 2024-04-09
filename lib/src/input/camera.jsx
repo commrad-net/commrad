@@ -141,10 +141,13 @@ const CommradCamera = ({onChange}) => {
                     height: 4rem;
                     object-fit: cover;
                     cursor: pointer;
+                    border-radius: 6px;
                 }
                 .media {
                     aspect-ratio: 1/1;
                     background: black;
+                    border-radius: 6px;
+                    overflow: hidden;
                 }
 
                 .media img, .media video {
