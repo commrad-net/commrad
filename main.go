@@ -138,6 +138,8 @@ func main() {
 
 	app.OnBeforeServe().Add(func(e *core.ServeEvent) error {
 
+		e.Router.HTTPErrorHandler = customHTTPErrorHandler
+
 		e.Router.Pre(normalizePath)
 		e.Router.Use(rewritePath)
 		e.Router.Use(adminStylesMiddleware)
@@ -291,6 +293,25 @@ func handleDynamicRouteRequest(c echo.Context) error {
 	// Return the content of the file
 	return c.HTMLBlob(http.StatusOK, content)
 
+}
+
+func customHTTPErrorHandler(c echo.Context, err error) {
+    code := http.StatusInternalServerError
+    if he, ok := err.(*echo.HTTPError); ok {
+        code = he.Code
+    }
+	// Print the error message
+	log.Printf("Error: %s", err.Error())
+    // Create an error page variable using the code and the public directory
+    errorPage := fmt.Sprintf("public/%d.html", code)
+    // Check if the error page exists
+    if _, err := os.Stat(errorPage); err == nil {
+        // If the error page exists, return the error page
+        c.File(errorPage)
+    } else {
+        // If the error page does not exist, return the default error message
+        c.String(code, "Internal Server Error")
+    }
 }
 
 // normalizePath removes the .html extension and trailing slash from the URL path
