@@ -215,8 +215,27 @@ func handleDynamicRouteRequest(c echo.Context) error {
 	params := c.PathParams()
 	htmlPath := c.Request().URL.Path
 
-	// Create a checkPath variable to check if a file exists at the path
-	checkPath := fmt.Sprintf("public%s.html", htmlPath)
+	fileExt := filepath.Ext(htmlPath) // get the file extension
+	// If the file extension is empty, set it to .html
+	if fileExt == "" {
+		fileExt = ".html"
+	}
+
+	// If the file extension is anything other than .html, return the file
+	if fileExt != ".html" {
+		// Check if the file exists
+		if _, err := os.Stat(fmt.Sprintf("public%s", htmlPath)); os.IsNotExist(err) {
+			// If the file does not exist, return a 404 error
+			return c.String(http.StatusNotFound, "404 Not Found")
+		}
+		return c.File(fmt.Sprintf("public%s", htmlPath))
+	}
+
+	// Remove the extension from the HTML path, if it exists
+	htmlPath = strings.TrimSuffix(htmlPath, fileExt)
+
+	// Create a checkPath variable to check if a file exists at the path, with the public directory prepended and the extension appended
+	checkPath := fmt.Sprintf("public%s%s", htmlPath, fileExt)
 
 	// Check if the file exists
 	if _, err := os.Stat(checkPath); err == nil {
@@ -318,6 +337,12 @@ func customHTTPErrorHandler(c echo.Context, err error) {
 // normalizePath removes the .html extension and trailing slash from the URL path
 func normalizePath(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
+
+		// If the request is for the admin or has an extension, proceed with the next middleware
+		if strings.HasPrefix(c.Request().URL.Path, "/_") || strings.HasPrefix(c.Request().URL.Path, "/api") || strings.Contains(c.Request().URL.Path, ".") {
+			return next(c)
+		}
+
 		path := c.Request().URL.Path
 
 		// Remove the .html extension if it exists
@@ -361,7 +386,12 @@ func adminStylesMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 
 		// If the request is not for the admin or has an extension proceed with the next middleware
-		if !strings.HasPrefix(c.Request().URL.Path, "/_") || strings.Contains(c.Request().URL.Path, ".") {
+		if !strings.HasPrefix(c.Request().URL.Path, "/_") || strings.Contains(c.Request().URL.Path, "."){
+			return next(c)
+		}
+
+		// Check if public/admin.css exists. If it doesn't, then proceed with the next middleware
+		if _, err := os.Stat("public/admin.css"); os.IsNotExist(err) {
 			return next(c)
 		}
 
