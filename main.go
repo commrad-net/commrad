@@ -34,6 +34,9 @@ func main() {
 		DefaultDataDir: "data",
 	})
 
+	// Modify the short property of the root command
+	app.RootCmd.Short = "Commrad CLI"
+
 	// ---------------------------------------------------------------
 	// Optional plugin flags:
 	// ---------------------------------------------------------------
