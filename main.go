@@ -386,12 +386,7 @@ func adminStylesMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 
 		// If the request is not for the admin or has an extension proceed with the next middleware
-		if !strings.HasPrefix(c.Request().URL.Path, "/_") || strings.Contains(c.Request().URL.Path, "."){
-			return next(c)
-		}
-
-		// Check if public/admin.css exists. If it doesn't, then proceed with the next middleware
-		if _, err := os.Stat("public/admin.css"); os.IsNotExist(err) {
+		if !strings.HasPrefix(c.Request().URL.Path, "/_"){
 			return next(c)
 		}
 
@@ -431,7 +426,7 @@ func adminStylesMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 				body = recorder.Body.String()
 			}
 
-			// Modify the response (example: adding a footer)
+			// Modify the response (example: adding a footer), that only includes link to admin.css if it exists
 			modifiedBody := strings.Replace(body, "</head>", `<style>
 				.logo { 
 					display: none; 
@@ -446,7 +441,12 @@ func adminStylesMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 					display: none;
 				}
 			</style>
-			<link rel="stylesheet" href="/admin.css">
+			` + func() string {
+				if _, err := os.Stat("public/admin.css"); err == nil{
+					return `<link rel="stylesheet" href="/admin.css">`
+				}
+				return ""
+			} () + `
 			</head>`, 1)
 
 			// Write the modified content back to the original response writer
